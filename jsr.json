@@ -6,6 +6,6 @@
         ".": "./dist/index.d.ts"
     },
     "publish": {
-        "include": ["dist"]
+        "include": ["dist", "README.md", "LICENSE"]
     }
 }
