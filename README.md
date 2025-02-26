@@ -9,31 +9,33 @@ Types for [AsyncAPI](https://www.asyncapi.com) in separate package.
 
 ## Installation
 
-### Install types for v2 version of spec
-
-```bash
-npm i asyncapi-types@^2 -d
-```
-
 ### Install types for v3 version of spec
 
 ```bash
 npm i asyncapi-types@^3 -d
 ```
 
+### Install types for v2 version of spec
+
+```bash
+npm i asyncapi-types@^2 -d
+```
+
 ## Usage
 
 ```ts
+import type { AsyncAPIObject } from "asyncapi-types";
+
 const asyncapi: AsyncAPIObject = {
-    asyncapi: "2.0.0",
+    asyncapi: "3.0.0",
     info: {
         title: "My API",
         version: "1.0.0",
     },
     channels: {
         "my-channel": {
-            subscribe: {
-                message: {
+            messages: {
+                "my-message": {
                     payload: { type: "string" },
                 },
             },

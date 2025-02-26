@@ -4,21 +4,20 @@ import type {
     JSONSchema7Version,
 } from "json-schema";
 
-// https://github.com/asyncapi/parser-js/blob/960f7a194a638af8a4daccff11d6f4bfb670c099/packages/parser/src/spec-types/v2.ts#L3 changed from string
-export type AsyncAPIVersion = `2.${number}.${number}`;
+// https://github.com/asyncapi/parser-js/blob/960f7a194a638af8a4daccff11d6f4bfb670c099/packages/parser/src/spec-types/v3.ts#L3 changed from string
+export type AsyncAPIVersion = `3.${number}.${number}`;
 export type Identifier = string;
 export type DefaultContentType = string;
 
 export interface AsyncAPIObject extends SpecificationExtensions {
     asyncapi: AsyncAPIVersion;
     id?: Identifier;
-    info: InfoObject;
     defaultContentType?: DefaultContentType;
+    info: InfoObject;
     servers?: ServersObject;
-    channels: ChannelsObject;
+    channels?: ChannelsObject;
+    operations?: OperationsObject;
     components?: ComponentsObject;
-    tags?: TagsObject;
-    externalDocs?: ExternalDocumentationObject;
 }
 
 export interface InfoObject extends SpecificationExtensions {
@@ -28,6 +27,8 @@ export interface InfoObject extends SpecificationExtensions {
     termsOfService?: string;
     contact?: ContactObject;
     license?: LicenseObject;
+    tags?: TagsObject;
+    externalDocs?: ExternalDocumentationObject | ReferenceObject;
 }
 
 export interface ContactObject extends SpecificationExtensions {
@@ -41,17 +42,19 @@ export interface LicenseObject extends SpecificationExtensions {
     url?: string;
 }
 
-export type ServersObject = Record<string, ServerObject>;
+export type ServersObject = Record<string, ServerObject | ReferenceObject>;
 
 export interface ServerObject extends SpecificationExtensions {
-    url: string;
+    host: string;
     protocol: string;
+    pathname?: string;
     protocolVersion?: string;
     description?: string;
-    variables?: Record<string, ServerVariableObject>;
-    security?: Array<SecurityRequirementObject>;
-    bindings?: ServerBindingsObject | ReferenceObject;
+    variables?: Record<string, ServerVariableObject | ReferenceObject>;
+    security?: Array<SecuritySchemeObject | ReferenceObject>;
     tags?: TagsObject;
+    externalDocs?: ExternalDocumentationObject | ReferenceObject;
+    bindings?: ServerBindingsObject | ReferenceObject;
 }
 
 export interface ServerVariableObject extends SpecificationExtensions {
@@ -78,16 +81,21 @@ export interface ServerBindingsObject extends SpecificationExtensions {
     redis?: Binding;
     mercure?: Binding;
     ibmmq?: Binding;
+    googlepubsub?: Binding;
 }
 
-export type ChannelsObject = Record<string, ChannelObject>;
+export type ChannelsObject = Record<string, ChannelObject | ReferenceObject>;
 
 export interface ChannelObject extends SpecificationExtensions {
+    address?: string | null;
+    messages?: MessagesObject;
+    title?: string;
+    summary?: string;
     description?: string;
-    servers?: Array<string>;
-    subscribe?: OperationObject;
-    publish?: OperationObject;
+    servers?: Array<ServerObject | ReferenceObject>;
     parameters?: ParametersObject;
+    tags?: TagsObject;
+    externalDocs?: ExternalDocumentationObject | ReferenceObject;
     bindings?: ChannelBindingsObject | ReferenceObject;
 }
 
@@ -108,26 +116,48 @@ export interface ChannelBindingsObject extends SpecificationExtensions {
     redis?: Binding;
     mercure?: Binding;
     ibmmq?: Binding;
+    googlepubsub?: Binding;
 }
 
-export interface OperationObject
-    extends OperationTraitObject,
-        SpecificationExtensions {
-    message?:
-        | MessageObject
-        | ReferenceObject
-        | { oneOf: Array<MessageObject | ReferenceObject> };
+export type OperationsObject = Record<
+    string,
+    OperationObject | ReferenceObject
+>;
+
+export interface OperationObject extends SpecificationExtensions {
+    action: "send" | "receive";
+    channel: ChannelObject | ReferenceObject;
+    messages?: Array<MessageObject | ReferenceObject>;
+    reply?: OperationReplyObject | ReferenceObject;
+    title?: string;
+    summary?: string;
+    description?: string;
+    security?: Array<SecuritySchemeObject | ReferenceObject>;
+    tags?: TagsObject;
+    externalDocs?: ExternalDocumentationObject | ReferenceObject;
+    bindings?: OperationBindingsObject | ReferenceObject;
     traits?: Array<OperationTraitObject | ReferenceObject>;
 }
 
 export interface OperationTraitObject extends SpecificationExtensions {
-    operationId?: string;
+    title?: string;
     summary?: string;
     description?: string;
-    security?: Array<SecurityRequirementObject>;
+    security?: Array<SecuritySchemeObject | ReferenceObject>;
     tags?: TagsObject;
-    externalDocs?: ExternalDocumentationObject;
+    externalDocs?: ExternalDocumentationObject | ReferenceObject;
     bindings?: OperationBindingsObject | ReferenceObject;
+}
+
+export interface OperationReplyObject extends SpecificationExtensions {
+    channel?: ChannelObject | ReferenceObject;
+    messages?: (MessageObject | ReferenceObject)[];
+    address?: OperationReplyAddressObject | ReferenceObject;
+}
+
+export interface OperationReplyAddressObject extends SpecificationExtensions {
+    location: string;
+    description?: string;
 }
 
 export interface OperationBindingsObject extends SpecificationExtensions {
@@ -147,18 +177,10 @@ export interface OperationBindingsObject extends SpecificationExtensions {
     redis?: Binding;
     mercure?: Binding;
     ibmmq?: Binding;
+    googlepubsub?: Binding;
 }
 
-export type ParametersObject = Record<
-    string,
-    ParameterObject | ReferenceObject
->;
-
-export interface ParameterObject extends SpecificationExtensions {
-    description?: string;
-    schema?: SchemaObject;
-    location?: string;
-}
+export type MessagesObject = Record<string, MessageObject | ReferenceObject>;
 
 export interface MessageObject
     extends MessageTraitObject,
@@ -168,17 +190,15 @@ export interface MessageObject
 }
 
 export interface MessageTraitObject extends SpecificationExtensions {
-    messageId?: string;
-    headers?: SchemaObject;
+    headers?: MultiFormatSchemaObject;
     correlationId?: CorrelationIDObject | ReferenceObject;
-    schemaFormat?: string;
     contentType?: string;
     name?: string;
     title?: string;
     summary?: string;
     description?: string;
     tags?: TagsObject;
-    externalDocs?: ExternalDocumentationObject;
+    externalDocs?: ExternalDocumentationObject | ReferenceObject;
     bindings?: MessageBindingsObject | ReferenceObject;
     examples?: Array<MessageExampleObject>;
 }
@@ -207,14 +227,28 @@ export interface MessageBindingsObject extends SpecificationExtensions {
     redis?: Binding;
     mercure?: Binding;
     ibmmq?: Binding;
+    googlepubsub?: Binding;
 }
 
-export type TagsObject = Array<TagObject>;
+export type ParametersObject = Record<
+    string,
+    ParameterObject | ReferenceObject
+>;
+
+export interface ParameterObject extends SpecificationExtensions {
+    description?: string;
+    enum?: string[];
+    default?: string;
+    examples?: string[];
+    location?: string;
+}
+
+export type TagsObject = Array<TagObject | ReferenceObject>;
 
 export interface TagObject extends SpecificationExtensions {
     name: string;
     description?: string;
-    externalDocs?: ExternalDocumentationObject;
+    externalDocs?: ExternalDocumentationObject | ReferenceObject;
 }
 
 export interface ExternalDocumentationObject extends SpecificationExtensions {
@@ -223,16 +257,27 @@ export interface ExternalDocumentationObject extends SpecificationExtensions {
 }
 
 export interface ComponentsObject extends SpecificationExtensions {
-    channels?: Record<string, ChannelObject | ReferenceObject>;
     servers?: Record<string, ServerObject | ReferenceObject>;
-    schemas?: Record<string, SchemaObject | ReferenceObject>;
+    channels?: Record<string, ChannelObject | ReferenceObject>;
+    operations?: Record<string, OperationObject | ReferenceObject>;
     messages?: Record<string, MessageObject | ReferenceObject>;
+    schemas?: Record<string, SchemaObject | ReferenceObject>;
     securitySchemes?: Record<string, SecuritySchemeObject | ReferenceObject>;
-    parameters?: Record<string, ParameterObject | ReferenceObject>;
     serverVariables?: Record<string, ServerVariableObject | ReferenceObject>;
+    parameters?: Record<string, ParameterObject | ReferenceObject>;
+    replies?: Record<string, OperationReplyObject | ReferenceObject>;
+    replyAddresses?: Record<
+        string,
+        OperationReplyAddressObject | ReferenceObject
+    >;
     correlationIds?: Record<string, CorrelationIDObject | ReferenceObject>;
     operationTraits?: Record<string, OperationTraitObject | ReferenceObject>;
     messageTraits?: Record<string, MessageTraitObject | ReferenceObject>;
+    tags?: Record<string, TagObject | ReferenceObject>;
+    externalDocs?: Record<
+        string,
+        ExternalDocumentationObject | ReferenceObject
+    >;
     serverBindings?: Record<string, ServerBindingsObject | ReferenceObject>;
     channelBindings?: Record<string, ChannelBindingsObject | ReferenceObject>;
     operationBindings?: Record<
@@ -242,9 +287,180 @@ export interface ComponentsObject extends SpecificationExtensions {
     messageBindings?: Record<string, MessageBindingsObject | ReferenceObject>;
 }
 
-export type SchemaObject = AsyncAPISchemaObject | ReferenceObject;
+export interface SecuritySchemeObject extends SpecificationExtensions {
+    type: SecuritySchemeType;
+    description?: string;
+    name?: string;
+    in?: "user" | "password" | "query" | "header" | "cookie";
+    scheme?: string;
+    bearerFormat?: string;
+    flows?: OAuthFlowsObject;
+    openIdConnectUrl?: string;
+    scopes?: string[];
+}
 
+export type SecuritySchemeType =
+    | "userPassword"
+    | "apiKey"
+    | "X509"
+    | "symmetricEncryption"
+    | "asymmetricEncryption"
+    | "httpApiKey"
+    | "http"
+    | "oauth2"
+    | "openIdConnect"
+    | "plain"
+    | "scramSha256"
+    | "scramSha512"
+    | "gssapi";
+
+export type SecuritySchemaLocation =
+    | "user"
+    | "password"
+    | "query"
+    | "header"
+    | "cookie";
+
+export interface SecuritySchemeObjectBase extends SpecificationExtensions {
+    description?: string;
+}
+
+export interface SecuritySchemeObjectUserPassword
+    extends SecuritySchemeObjectBase,
+        SpecificationExtensions {
+    type: "userPassword";
+}
+
+export interface SecuritySchemeObjectApiKey
+    extends SecuritySchemeObjectBase,
+        SpecificationExtensions {
+    type: "apiKey";
+    in: "user" | "password";
+}
+
+export interface SecuritySchemeObjectX509
+    extends SecuritySchemeObjectBase,
+        SpecificationExtensions {
+    type: "X509";
+}
+
+export interface SecuritySchemeObjectSymetricEncryption
+    extends SecuritySchemeObjectBase,
+        SpecificationExtensions {
+    type: "symmetricEncryption";
+}
+
+export interface SecuritySchemeObjectAsymetricEncryption
+    extends SecuritySchemeObjectBase,
+        SpecificationExtensions {
+    type: "asymmetricEncryption";
+}
+
+export interface SecuritySchemeObjectHttpApiKey
+    extends SecuritySchemeObjectBase,
+        SpecificationExtensions {
+    type: "httpApiKey";
+    name: string;
+    in: "query" | "header" | "cookie";
+}
+
+export interface SecuritySchemeObjectHttp
+    extends SecuritySchemeObjectBase,
+        SpecificationExtensions {
+    type: "http";
+    scheme: string;
+    bearerFormat?: string;
+}
+
+export interface SecuritySchemeObjectOauth2
+    extends SecuritySchemeObjectBase,
+        SpecificationExtensions {
+    type: "oauth2";
+    flows: OAuthFlowsObject;
+    scopes: string[];
+}
+
+export interface SecuritySchemeObjectOpenIdConnect
+    extends SecuritySchemeObjectBase,
+        SpecificationExtensions {
+    type: "openIdConnect";
+    openIdConnectUrl: string;
+}
+
+export interface SecuritySchemeObjectPlain
+    extends SecuritySchemeObjectBase,
+        SpecificationExtensions {
+    type: "plain";
+}
+
+export interface SecuritySchemeObjectScramSha256
+    extends SecuritySchemeObjectBase,
+        SpecificationExtensions {
+    type: "scramSha256";
+}
+
+export interface SecuritySchemeObjectScramSha512
+    extends SecuritySchemeObjectBase,
+        SpecificationExtensions {
+    type: "scramSha512";
+}
+
+export interface SecuritySchemeObjectGssapi
+    extends SecuritySchemeObjectBase,
+        SpecificationExtensions {
+    type: "gssapi";
+}
+
+export interface OAuthFlowsObject extends SpecificationExtensions {
+    implicit?: OAuthFlowObjectImplicit;
+    password?: OAuthFlowObjectPassword;
+    clientCredentials?: OAuthFlowObjectClientCredentials;
+    authorizationCode?: OAuthFlowObjectAuthorizationCode;
+}
+
+export type OAuthFlowObject = OAuthFlowObjectImplicit &
+    OAuthFlowObjectPassword &
+    OAuthFlowObjectClientCredentials &
+    OAuthFlowObjectAuthorizationCode;
+
+export interface OAuthFlowObjectBase extends SpecificationExtensions {
+    refreshUrl?: string;
+    availableScopes: Record<string, string>;
+}
+
+export interface OAuthFlowObjectImplicit
+    extends OAuthFlowObjectBase,
+        SpecificationExtensions {
+    authorizationUrl: string;
+}
+
+export interface OAuthFlowObjectPassword
+    extends OAuthFlowObjectBase,
+        SpecificationExtensions {
+    tokenUrl: string;
+}
+
+export interface OAuthFlowObjectClientCredentials
+    extends OAuthFlowObjectBase,
+        SpecificationExtensions {
+    tokenUrl: string;
+}
+
+export interface OAuthFlowObjectAuthorizationCode
+    extends OAuthFlowObjectBase,
+        SpecificationExtensions {
+    authorizationUrl: string;
+    tokenUrl: string;
+}
+
+export type SchemaObject = AsyncAPISchemaObject | ReferenceObject;
 export type AsyncAPISchemaObject = AsyncAPISchemaDefinition | boolean;
+export type MultiFormatObject = {
+    schema: AsyncAPISchemaObject;
+    schemaFormat: string | undefined;
+};
+export type MultiFormatSchemaObject = AsyncAPISchemaObject | MultiFormatObject;
+
 export interface AsyncAPISchemaDefinition extends SpecificationExtensions {
     $id?: string;
     $schema?: JSONSchema7Version;
@@ -317,178 +533,6 @@ export interface AsyncAPISchemaDefinition extends SpecificationExtensions {
     [keyword: string]: any;
 }
 
-export interface SecuritySchemeObject extends SpecificationExtensions {
-    type: SecuritySchemeType;
-    description?: string;
-    name?: string;
-    in?: "user" | "password" | "query" | "header" | "cookie";
-    scheme?: string;
-    bearerFormat?: string;
-    flows?: OAuthFlowsObject;
-    openIdConnectUrl?: string;
-}
-
-export type SecuritySchemeType =
-    | "userPassword"
-    | "apiKey"
-    | "X509"
-    | "symmetricEncryption"
-    | "asymmetricEncryption"
-    | "httpApiKey"
-    | "http"
-    | "oauth2"
-    | "openIdConnect"
-    | "plain"
-    | "scramSha256"
-    | "scramSha512"
-    | "gssapi";
-
-export type SecuritySchemaLocation =
-    | "user"
-    | "password"
-    | "query"
-    | "header"
-    | "header"
-    | "cookie";
-
-export interface SecuritySchemeObjectBase extends SpecificationExtensions {
-    description?: string;
-}
-
-export interface SecuritySchemeObjectUserPassword
-    extends SecuritySchemeObjectBase,
-        SpecificationExtensions {
-    type: "userPassword";
-}
-
-export interface SecuritySchemeObjectApiKey
-    extends SecuritySchemeObjectBase,
-        SpecificationExtensions {
-    type: "apiKey";
-    in: "user" | "password";
-}
-
-export interface SecuritySchemeObjectX509
-    extends SecuritySchemeObjectBase,
-        SpecificationExtensions {
-    type: "X509";
-}
-
-export interface SecuritySchemeObjectSymetricEncryption
-    extends SecuritySchemeObjectBase,
-        SpecificationExtensions {
-    type: "symmetricEncryption";
-}
-
-export interface SecuritySchemeObjectAsymetricEncryption
-    extends SecuritySchemeObjectBase,
-        SpecificationExtensions {
-    type: "asymmetricEncryption";
-}
-
-export interface SecuritySchemeObjectHttpApiKey
-    extends SecuritySchemeObjectBase,
-        SpecificationExtensions {
-    type: "httpApiKey";
-    name: string;
-    in: "query" | "header" | "cookie";
-}
-
-export interface SecuritySchemeObjectHttp
-    extends SecuritySchemeObjectBase,
-        SpecificationExtensions {
-    type: "http";
-    scheme: string;
-    bearerFormat?: string;
-}
-
-export interface SecuritySchemeObjectOauth2
-    extends SecuritySchemeObjectBase,
-        SpecificationExtensions {
-    type: "oauth2";
-    flows: OAuthFlowsObject;
-}
-
-export interface SecuritySchemeObjectOpenIdConnect
-    extends SecuritySchemeObjectBase,
-        SpecificationExtensions {
-    type: "openIdConnect";
-    openIdConnectUrl: string;
-}
-
-export interface SecuritySchemeObjectPlain
-    extends SecuritySchemeObjectBase,
-        SpecificationExtensions {
-    type: "plain";
-}
-
-export interface SecuritySchemeObjectScramSha256
-    extends SecuritySchemeObjectBase,
-        SpecificationExtensions {
-    type: "scramSha256";
-}
-
-export interface SecuritySchemeObjectScramSha512
-    extends SecuritySchemeObjectBase,
-        SpecificationExtensions {
-    type: "scramSha512";
-}
-
-export interface SecuritySchemeObjectGssapi
-    extends SecuritySchemeObjectBase,
-        SpecificationExtensions {
-    type: "gssapi";
-}
-
-export interface OAuthFlowsObject extends SpecificationExtensions {
-    implicit?: OAuthFlowObjectImplicit;
-    password?: OAuthFlowObjectPassword;
-    clientCredentials?: OAuthFlowObjectClientCredentials;
-    authorizationCode?: OAuthFlowObjectAuthorizationCode;
-}
-
-export type OAuthFlowObject = OAuthFlowObjectImplicit &
-    OAuthFlowObjectPassword &
-    OAuthFlowObjectClientCredentials &
-    OAuthFlowObjectAuthorizationCode;
-
-export interface OAuthFlowObjectBase extends SpecificationExtensions {
-    refreshUrl?: string;
-    scopes: Record<string, string>;
-}
-
-export interface OAuthFlowObjectImplicit
-    extends OAuthFlowObjectBase,
-        SpecificationExtensions {
-    authorizationUrl: string;
-}
-
-export interface OAuthFlowObjectPassword
-    extends OAuthFlowObjectBase,
-        SpecificationExtensions {
-    tokenUrl: string;
-}
-
-export interface OAuthFlowObjectClientCredentials
-    extends OAuthFlowObjectBase,
-        SpecificationExtensions {
-    tokenUrl: string;
-}
-
-export interface OAuthFlowObjectAuthorizationCode
-    extends OAuthFlowObjectBase,
-        SpecificationExtensions {
-    authorizationUrl: string;
-    tokenUrl: string;
-}
-
-export type SecurityRequirementObject = Record<string, Array<string>>;
-
-export interface CorrelationIDObject extends SpecificationExtensions {
-    location: string;
-    description?: string;
-}
-
 export interface Binding {
     bindingVersion?: string;
 }
@@ -501,4 +545,9 @@ export type SpecificationExtension<T = any> = T;
 
 export interface ReferenceObject {
     $ref: string;
+}
+
+export interface CorrelationIDObject extends SpecificationExtensions {
+    location: string;
+    description?: string;
 }
