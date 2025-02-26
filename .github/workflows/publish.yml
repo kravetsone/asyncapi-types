@@ -49,8 +49,8 @@ jobs:
             #   env:
             #       TOKEN: ${{ secrets.BOT_TOKEN }}
 
-            # - name: Build package
-            #   run: bun prepublishOnly
+            - name: Build package
+              run: bun prepublishOnly
 
             # - name: Run publint
             #   run: bunx publint
@@ -58,9 +58,9 @@ jobs:
             - name: Setup Deno
               uses: denoland/setup-deno@v1
 
-            # - name: Publish package to JSR
-            #   if: ${{ github.event.inputs.publish_to_jsr }}
-            #   run: deno publish --allow-dirty --unstable-sloppy-imports
+            - name: Publish package to JSR
+              if: ${{ github.event.inputs.publish_to_jsr }}
+              run: deno publish --allow-dirty --unstable-sloppy-imports
 
             # - name: Install Node
             #   uses: actions/setup-node@v4
