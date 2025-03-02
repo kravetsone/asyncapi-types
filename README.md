@@ -47,6 +47,7 @@ const asyncapi: AsyncAPIObject = {
 ### TODO
 
 - [ ] Add guide how to use both versions of types in one project
+- [ ] Improve `bindings` types based on [https://github.com/asyncapi/bindings/blob/master](https://github.com/asyncapi/bindings/blob/master)
 
 ### Thanks
 

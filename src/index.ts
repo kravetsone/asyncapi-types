@@ -64,9 +64,21 @@ export interface ServerVariableObject extends SpecificationExtensions {
     examples?: Array<string>;
 }
 
+// Improve types for WS because it missed here https://github.com/asyncapi/parser-js/blob/960f7a194a638af8a4daccff11d6f4bfb670c099/packages/parser/src/spec-types/v3.ts#L99
+// !Based on https://github.com/asyncapi/bindings/blob/master/websockets/README.md#channel
+export interface WSBindingObject extends Binding, SpecificationExtensions {
+    // IDK why AsyncAPI propose this because based on RFC (https://datatracker.ietf.org/doc/html/rfc6455#:~:text=2.%20%20%20The%20method%20of%20the%20request%20MUST%20be%20GET%2C%20and%20the%20HTTP%20version%20MUST%0A%20%20%20%20%20%20%20%20be%20at%20least%201.1.)
+    // It should be ONLY GET
+    method?: "GET";
+    query?: SchemaObject | ReferenceObject;
+    headers?: SchemaObject | ReferenceObject;
+}
+
+// Types here should be improved based on https://github.com/asyncapi/bindings/blob/master
+// Feels free to send a PR to improve it
 export interface ServerBindingsObject extends SpecificationExtensions {
     http?: Binding;
-    ws?: Binding;
+    ws?: WSBindingObject;
     kafka?: Binding;
     anypointmq?: Binding;
     amqp?: Binding;
