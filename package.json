@@ -1,6 +1,6 @@
 {
     "name": "asyncapi-types",
-    "version": "3.0.0",
+    "version": "3.0.1",
     "homepage": "https://github.com/kravetsone/asyncapi-types",
     "readme": "https://github.com/kravetsone/asyncapi-types",
     "repository": {
@@ -19,10 +19,10 @@
     "type": "module",
     "devDependencies": {
         "@biomejs/biome": "^1.9.4",
-        "@types/bun": "latest",
+        "@types/bun": "^1.2.4",
         "@types/json-schema": "^7.0.15",
-        "pkgroll": "^2.6.1",
-        "typescript": "^5.0.0"
+        "pkgroll": "^2.11.2",
+        "typescript": "^5.8.2"
     },
     "scripts": {
         "prepublishOnly": "bunx pkgroll"
