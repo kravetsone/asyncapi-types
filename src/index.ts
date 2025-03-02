@@ -113,7 +113,7 @@ export interface ChannelObject extends SpecificationExtensions {
 
 export interface ChannelBindingsObject extends SpecificationExtensions {
     http?: Binding;
-    ws?: Binding;
+    ws?: WSBindingObject;
     kafka?: Binding;
     anypointmq?: Binding;
     amqp?: Binding;
@@ -174,7 +174,7 @@ export interface OperationReplyAddressObject extends SpecificationExtensions {
 
 export interface OperationBindingsObject extends SpecificationExtensions {
     http?: Binding;
-    ws?: Binding;
+    ws?: WSBindingObject;
     kafka?: Binding;
     anypointmq?: Binding;
     amqp?: Binding;
@@ -224,7 +224,7 @@ export interface MessageExampleObject extends SpecificationExtensions {
 
 export interface MessageBindingsObject extends SpecificationExtensions {
     http?: Binding;
-    ws?: Binding;
+    ws?: WSBindingObject;
     kafka?: Binding;
     anypointmq?: Binding;
     amqp?: Binding;
